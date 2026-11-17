@@ -1,6 +1,10 @@
 import { useEffect, useState } from 'react';
-import type { Todo } from '../types';
+import type { Todo, TodoDetails } from '../types';
 import { loadTodos, saveTodos } from '../storage';
+import { DEFAULT_DETAILS } from '../lib/todos';
+
+/** Fields that can be changed through the inline editor. */
+export type TodoChanges = Partial<Pick<Todo, 'title' | keyof TodoDetails>>;
 
 /** A removed todo together with its former position, so it can be put back exactly. */
 export interface RemovedTodo {
@@ -15,10 +19,11 @@ export function useTodos() {
     saveTodos(todos);
   }, [todos]);
 
-  function add(title: string): Todo {
+  function add(title: string, details: TodoDetails = DEFAULT_DETAILS): Todo {
     const todo: Todo = {
       id: crypto.randomUUID(),
       title,
+      ...details,
       completed: false,
       createdAt: Date.now(),
     };
@@ -32,8 +37,11 @@ export function useTodos() {
     );
   }
 
-  function rename(id: string, title: string) {
-    setTodos((current) => current.map((todo) => (todo.id === id ? { ...todo, title } : todo)));
+  /** Replaces the editable fields (title and details) of one todo. */
+  function update(id: string, changes: TodoChanges) {
+    setTodos((current) =>
+      current.map((todo) => (todo.id === id ? { ...todo, ...changes } : todo)),
+    );
   }
 
   function remove(id: string): RemovedTodo | null {
@@ -76,7 +84,7 @@ export function useTodos() {
     },
     add,
     toggle,
-    rename,
+    update,
     remove,
     clearCompleted,
     restore,

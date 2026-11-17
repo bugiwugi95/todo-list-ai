@@ -1,14 +1,23 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { Check, Pencil, Trash2 } from 'lucide-react';
-import type { Todo } from '../types';
-import { MAX_TITLE_LENGTH, isValidTitle, normalizeTitle } from '../lib/todos';
+import type { Todo, TodoDetails } from '../types';
+import type { TodoChanges } from '../hooks/useTodos';
+import {
+  MAX_TITLE_LENGTH,
+  getDetails,
+  isValidTitle,
+  normalizeDetails,
+  normalizeTitle,
+} from '../lib/todos';
 import { iconProps } from '../icons';
+import { TodoDetailsFields } from './TodoDetailsFields';
+import { TodoMeta } from './TodoMeta';
 
 interface TodoItemProps {
   todo: Todo;
   highlighted: boolean;
   onToggle: (todo: Todo) => void;
-  onRename: (id: string, title: string) => void;
+  onUpdate: (id: string, changes: TodoChanges) => void;
   onDelete: (id: string) => void;
 }
 
@@ -16,9 +25,19 @@ export function checkboxId(id: string): string {
   return `todo-check-${id}`;
 }
 
-export function TodoItem({ todo, highlighted, onToggle, onRename, onDelete }: TodoItemProps) {
+function hasChanges(todo: Todo, title: string, details: TodoDetails): boolean {
+  return (
+    title !== todo.title ||
+    details.description !== todo.description ||
+    details.priority !== todo.priority ||
+    details.dueDate !== todo.dueDate
+  );
+}
+
+export function TodoItem({ todo, highlighted, onToggle, onUpdate, onDelete }: TodoItemProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState(todo.title);
+  const [detailsDraft, setDetailsDraft] = useState<TodoDetails>(() => getDetails(todo));
   const editingRef = useRef(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const editButtonRef = useRef<HTMLButtonElement>(null);
@@ -38,28 +57,36 @@ export function TodoItem({ todo, highlighted, onToggle, onRename, onDelete }: To
   function startEditing() {
     editingRef.current = true;
     setDraft(todo.title);
+    setDetailsDraft(getDetails(todo));
     setIsEditing(true);
   }
 
-  /** Leaves edit mode; only an explicit save (Enter or «Сохранить») renames the task. */
+  /** Leaves edit mode; only an explicit save (Enter or «Сохранить») changes the task. */
   function finishEditing(save: boolean) {
     // Guards against a second call within the same render, e.g. a repeated Enter or double click.
     if (!editingRef.current) return;
     editingRef.current = false;
     restoreFocusRef.current = true;
     setIsEditing(false);
+    if (!save) return;
 
     const title = normalizeTitle(draft);
-    if (save && isValidTitle(title) && title !== todo.title) {
-      onRename(todo.id, title);
+    const details = normalizeDetails(detailsDraft);
+    if (isValidTitle(title) && details && hasChanges(todo, title, details)) {
+      onUpdate(todo.id, { title, ...details });
     }
   }
 
-  function handleKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+  function handleTitleKeyDown(event: KeyboardEvent<HTMLInputElement>) {
     if (event.key === 'Enter') {
       event.preventDefault();
       finishEditing(true);
-    } else if (event.key === 'Escape') {
+    }
+  }
+
+  /** Escape cancels from any field of the editor, including the description. */
+  function handleEditorKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    if (event.key === 'Escape') {
       event.preventDefault();
       finishEditing(false);
     }
@@ -88,18 +115,19 @@ export function TodoItem({ todo, highlighted, onToggle, onRename, onDelete }: To
       </span>
 
       {isEditing ? (
-        <>
+        <div className="todo__editor" onKeyDown={handleEditorKeyDown}>
           <input
             ref={inputRef}
             className="todo__edit"
             type="text"
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
-            onKeyDown={handleKeyDown}
+            onKeyDown={handleTitleKeyDown}
             maxLength={MAX_TITLE_LENGTH}
             enterKeyHint="done"
             aria-label="Текст задачи"
           />
+          <TodoDetailsFields id={`todo-${todo.id}`} value={detailsDraft} onChange={setDetailsDraft} />
           <div className="todo__edit-actions">
             <button
               type="button"
@@ -116,12 +144,16 @@ export function TodoItem({ todo, highlighted, onToggle, onRename, onDelete }: To
               Сохранить
             </button>
           </div>
-        </>
+        </div>
       ) : (
         <>
-          <span id={titleId} className="todo__title" onDoubleClick={startEditing}>
-            {todo.title}
-          </span>
+          <div className="todo__body">
+            <span id={titleId} className="todo__title" onDoubleClick={startEditing}>
+              {todo.title}
+            </span>
+            {todo.description && <p className="todo__description">{todo.description}</p>}
+            <TodoMeta todo={todo} />
+          </div>
           <div className="todo__actions">
             <button
               ref={editButtonRef}

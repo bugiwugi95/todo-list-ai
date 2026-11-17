@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { Filter, Todo } from './types';
-import { useTodos, type RemovedTodo } from './hooks/useTodos';
+import type { Filter, Todo, TodoDetails } from './types';
+import { useTodos, type RemovedTodo, type TodoChanges } from './hooks/useTodos';
 import { matchesFilter, plural } from './lib/todos';
 import { TodoForm } from './components/TodoForm';
 import { FilterBar } from './components/FilterBar';
@@ -22,7 +22,7 @@ function isTextField(target: EventTarget | null): boolean {
 }
 
 export function App() {
-  const { todos, counts, add, toggle, rename, remove, clearCompleted, restore } = useTodos();
+  const { todos, counts, add, toggle, update, remove, clearCompleted, restore } = useTodos();
   const [filter, setFilter] = useState<Filter>('all');
   const [toast, setToast] = useState<ToastData | null>(null);
   const [highlightedId, setHighlightedId] = useState<string | null>(null);
@@ -73,8 +73,8 @@ export function App() {
     pendingFocus.current = neighbour ? neighbour.id : 'input';
   }
 
-  function handleAdd(title: string) {
-    const todo = add(title);
+  function handleAdd(title: string, details: TodoDetails) {
+    const todo = add(title, details);
     if (filter === 'completed') setFilter('all');
     setHighlightedId(todo.id);
     setAnnouncement(`Добавлено: ${title}`);
@@ -92,8 +92,8 @@ export function App() {
     }
   }
 
-  function handleRename(id: string, title: string) {
-    rename(id, title);
+  function handleUpdate(id: string, changes: TodoChanges) {
+    update(id, changes);
     setHighlightedId(id);
     setAnnouncement('Изменения сохранены');
   }
@@ -143,7 +143,7 @@ export function App() {
                     todo={todo}
                     highlighted={todo.id === highlightedId}
                     onToggle={handleToggle}
-                    onRename={handleRename}
+                    onUpdate={handleUpdate}
                     onDelete={handleDelete}
                   />
                 ))}

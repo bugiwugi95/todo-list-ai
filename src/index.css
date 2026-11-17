@@ -57,7 +57,9 @@ p {
 }
 
 button,
-input {
+input,
+select,
+textarea {
   font: inherit;
   color: inherit;
 }
@@ -250,6 +252,92 @@ button {
   color: var(--danger);
 }
 
+.composer__more {
+  margin-top: 6px;
+  margin-left: -10px;
+}
+
+.composer__details {
+  margin-top: 8px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+
+/* ---------- Detail fields (add form and inline editor) ---------- */
+
+.details {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.details__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.details__row .field {
+  flex: 1 1 200px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.field__label {
+  font-size: 13px;
+  font-weight: 550;
+  color: var(--text-secondary);
+}
+
+.field__inline {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.field__inline .field__control {
+  flex: 1;
+  min-width: 0;
+}
+
+.field__control {
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  font-size: 15px;
+  transition:
+    border-color 120ms var(--ease),
+    box-shadow 120ms var(--ease);
+}
+
+.field__control:hover {
+  border-color: #bdbcb7;
+}
+
+.field__control:focus,
+.field__control:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.field__control--textarea {
+  height: auto;
+  min-height: 76px;
+  padding: 8px 12px;
+  line-height: 1.5;
+  resize: vertical;
+}
+
 /* ---------- Filters ---------- */
 
 .filters {
@@ -334,7 +422,7 @@ button {
 }
 
 .todo[data-editing='true'] {
-  align-items: center;
+  padding-bottom: 12px;
   background: var(--surface-muted);
 }
 
@@ -423,10 +511,14 @@ button {
   opacity: 0.5;
 }
 
-.todo__title {
+.todo__body {
   flex: 1;
   min-width: 0;
   padding: 8px 4px;
+}
+
+.todo__title {
+  display: block;
   font-size: 16px;
   line-height: 24px;
   overflow-wrap: anywhere;
@@ -437,6 +529,47 @@ button {
   color: var(--text-tertiary);
   text-decoration: line-through;
   text-decoration-color: var(--border-strong);
+}
+
+.todo__description {
+  display: -webkit-box;
+  margin-top: 2px;
+  overflow: hidden;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--text-secondary);
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+}
+
+.todo__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 12px;
+  margin-top: 4px;
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--text-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+
+.todo__priority[data-priority='high'] {
+  color: var(--accent);
+  font-weight: 550;
+}
+
+.todo__due[data-overdue='true'] {
+  color: var(--danger);
+  font-weight: 550;
+}
+
+.todo[data-completed='true'] .todo__description,
+.todo[data-completed='true'] .todo__meta,
+.todo[data-completed='true'] .todo__priority {
+  color: var(--text-tertiary);
 }
 
 .todo__actions {
@@ -460,9 +593,17 @@ button {
   }
 }
 
-.todo__edit {
+.todo__editor {
+  display: flex;
   flex: 1;
+  flex-direction: column;
+  gap: 12px;
   min-width: 0;
+  padding: 0 4px;
+}
+
+.todo__edit {
+  width: 100%;
   height: 40px;
   padding: 0 11px;
   border: 1px solid var(--accent);
@@ -478,9 +619,8 @@ button {
 
 .todo__edit-actions {
   display: flex;
-  flex-shrink: 0;
+  justify-content: flex-end;
   gap: 4px;
-  margin-left: 4px;
 }
 
 /* ---------- Empty state ---------- */
@@ -613,7 +753,7 @@ button {
     padding: 6px 4px 6px 4px;
   }
 
-  .todo__title {
+  .todo__body {
     padding-right: 0;
   }
 
@@ -627,18 +767,15 @@ button {
   }
 
   .todo[data-editing='true'] {
-    flex-wrap: wrap;
-    row-gap: 8px;
-    padding: 10px 12px 12px 4px;
+    padding: 6px 8px 12px 4px;
   }
 
-  .todo__edit {
-    flex-basis: calc(100% - 48px);
+  .composer__details {
+    padding: 12px;
   }
 
-  .todo__edit-actions {
-    width: 100%;
-    justify-content: flex-end;
+  .field__control {
+    font-size: 16px; /* prevents iOS zoom on focus */
   }
 
   .tasks__footer {

@@ -1,8 +1,16 @@
 import { forwardRef, useState, type FormEvent } from 'react';
-import { MAX_TITLE_LENGTH, isValidTitle, normalizeTitle } from '../lib/todos';
+import type { TodoDetails } from '../types';
+import {
+  DEFAULT_DETAILS,
+  MAX_TITLE_LENGTH,
+  isValidTitle,
+  normalizeDetails,
+  normalizeTitle,
+} from '../lib/todos';
+import { TodoDetailsFields } from './TodoDetailsFields';
 
 interface TodoFormProps {
-  onAdd: (title: string) => void;
+  onAdd: (title: string, details: TodoDetails) => void;
 }
 
 export const TodoForm = forwardRef<HTMLInputElement, TodoFormProps>(function TodoForm(
@@ -11,6 +19,8 @@ export const TodoForm = forwardRef<HTMLInputElement, TodoFormProps>(function Tod
 ) {
   const [value, setValue] = useState('');
   const [showError, setShowError] = useState(false);
+  const [details, setDetails] = useState<TodoDetails>(DEFAULT_DETAILS);
+  const [showDetails, setShowDetails] = useState(false);
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -20,8 +30,12 @@ export const TodoForm = forwardRef<HTMLInputElement, TodoFormProps>(function Tod
       setValue('');
       return;
     }
-    onAdd(title);
+    const normalizedDetails = normalizeDetails(details);
+    if (!normalizedDetails) return;
+    onAdd(title, normalizedDetails);
     setValue('');
+    setDetails(DEFAULT_DETAILS);
+    setShowDetails(false);
   }
 
   return (
@@ -56,6 +70,21 @@ export const TodoForm = forwardRef<HTMLInputElement, TodoFormProps>(function Tod
         <p id="new-todo-error" className="composer__error" role="alert">
           Введите текст задачи
         </p>
+      )}
+
+      <button
+        type="button"
+        className="button button--ghost button--small composer__more"
+        aria-expanded={showDetails}
+        aria-controls="new-todo-details"
+        onClick={() => setShowDetails((open) => !open)}
+      >
+        {showDetails ? 'Скрыть подробности' : 'Подробнее'}
+      </button>
+      {showDetails && (
+        <div id="new-todo-details" className="composer__details">
+          <TodoDetailsFields id="new-todo" value={details} onChange={setDetails} />
+        </div>
       )}
     </form>
   );

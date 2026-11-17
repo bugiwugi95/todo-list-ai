@@ -1,9 +1,20 @@
-import type { Todo } from './types';
-import { isValidTitle, normalizeTitle } from './lib/todos';
+import type { Todo, TodoDetails } from './types';
+import {
+  DEFAULT_DETAILS,
+  isPriority,
+  isValidDescription,
+  isValidTitle,
+  normalizeDescription,
+  normalizeTitle,
+} from './lib/todos';
+import { isValidDueDate } from './lib/dueDate';
 
 const STORAGE_KEY = 'todo-list-ai:todos';
 
-function isTodo(value: unknown): value is Todo {
+/** Fields every saved todo must have; older records contain only these. */
+type StoredTodo = Pick<Todo, 'id' | 'title' | 'completed' | 'createdAt'> & Record<string, unknown>;
+
+function isStoredTodo(value: unknown): value is StoredTodo {
   if (typeof value !== 'object' || value === null) return false;
   const item = value as Record<string, unknown>;
   return (
@@ -15,6 +26,23 @@ function isTodo(value: unknown): value is Todo {
     typeof item.createdAt === 'number' &&
     Number.isFinite(item.createdAt)
   );
+}
+
+/**
+ * Optional fields fall back to defaults when missing or invalid, so records saved
+ * before these fields existed (or with a broken value) still load.
+ */
+function readDetails(item: StoredTodo): TodoDetails {
+  const description =
+    typeof item.description === 'string' ? normalizeDescription(item.description) : '';
+  return {
+    description: isValidDescription(description) ? description : DEFAULT_DETAILS.description,
+    priority: isPriority(item.priority) ? item.priority : DEFAULT_DETAILS.priority,
+    dueDate:
+      typeof item.dueDate === 'string' && isValidDueDate(item.dueDate)
+        ? item.dueDate
+        : DEFAULT_DETAILS.dueDate,
+  };
 }
 
 /**
@@ -42,11 +70,12 @@ export function loadTodos(): Todo[] {
   const seen = new Set<string>();
   const todos: Todo[] = [];
   for (const item of parsed) {
-    if (!isTodo(item) || seen.has(item.id)) continue;
+    if (!isStoredTodo(item) || seen.has(item.id)) continue;
     seen.add(item.id);
     todos.push({
       id: item.id,
       title: normalizeTitle(item.title),
+      ...readDetails(item),
       completed: item.completed,
       createdAt: item.createdAt,
     });
