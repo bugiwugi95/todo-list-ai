@@ -17,8 +17,19 @@ function getSummary(active: number, total: number): string {
   return `${active} ${plural(active, ACTIVE_FORMS)} из ${total}`;
 }
 
-function isTextField(target: EventTarget | null): boolean {
-  return target instanceof HTMLInputElement && target.type === 'text';
+// Inputs without editable text: Ctrl+Z on them has no native meaning, so the global undo stays available
+// (e.g. focus lands on a neighbouring checkbox right after a task is deleted).
+const NON_EDITABLE_INPUT_TYPES = new Set(['checkbox', 'radio', 'button', 'submit', 'reset']);
+
+/** True when Ctrl/Cmd+Z should be left to the browser's own undo for this element. */
+function isEditableTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  if (target instanceof HTMLInputElement) return !NON_EDITABLE_INPUT_TYPES.has(target.type);
+  return (
+    target instanceof HTMLTextAreaElement ||
+    target instanceof HTMLSelectElement ||
+    target.isContentEditable
+  );
 }
 
 export function App() {
@@ -57,7 +68,7 @@ export function App() {
     if (!undo) return;
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key.toLowerCase() !== 'z' || !(event.ctrlKey || event.metaKey)) return;
-      if (event.shiftKey || isTextField(event.target)) return;
+      if (event.shiftKey || isEditableTarget(event.target)) return;
       event.preventDefault();
       undo?.();
       setToast(null);
