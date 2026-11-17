@@ -1,5 +1,5 @@
 import { forwardRef, useState, type FormEvent } from 'react';
-import { MAX_TITLE_LENGTH, normalizeTitle } from '../lib/todos';
+import { MAX_TITLE_LENGTH, isValidTitle, normalizeTitle } from '../lib/todos';
 
 interface TodoFormProps {
   onAdd: (title: string) => void;
@@ -15,7 +15,7 @@ export const TodoForm = forwardRef<HTMLInputElement, TodoFormProps>(function Tod
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const title = normalizeTitle(value);
-    if (!title) {
+    if (!isValidTitle(title)) {
       setShowError(true);
       setValue('');
       return;

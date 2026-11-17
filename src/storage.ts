@@ -1,4 +1,5 @@
 import type { Todo } from './types';
+import { isValidTitle, normalizeTitle } from './lib/todos';
 
 const STORAGE_KEY = 'todo-list-ai:todos';
 
@@ -9,7 +10,7 @@ function isTodo(value: unknown): value is Todo {
     typeof item.id === 'string' &&
     item.id.length > 0 &&
     typeof item.title === 'string' &&
-    item.title.trim().length > 0 &&
+    isValidTitle(normalizeTitle(item.title)) &&
     typeof item.completed === 'boolean' &&
     typeof item.createdAt === 'number' &&
     Number.isFinite(item.createdAt)
@@ -45,7 +46,7 @@ export function loadTodos(): Todo[] {
     seen.add(item.id);
     todos.push({
       id: item.id,
-      title: item.title.trim(),
+      title: normalizeTitle(item.title),
       completed: item.completed,
       createdAt: item.createdAt,
     });

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { Check, Pencil, Trash2 } from 'lucide-react';
 import type { Todo } from '../types';
-import { MAX_TITLE_LENGTH, normalizeTitle } from '../lib/todos';
+import { MAX_TITLE_LENGTH, isValidTitle, normalizeTitle } from '../lib/todos';
 import { iconProps } from '../icons';
 
 interface TodoItemProps {
@@ -41,15 +41,16 @@ export function TodoItem({ todo, highlighted, onToggle, onRename, onDelete }: To
     setIsEditing(true);
   }
 
-  function finishEditing(save: boolean, restoreFocus: boolean) {
-    // Guards against a second call, e.g. blur right after Enter.
+  /** Leaves edit mode; only an explicit save (Enter or «Сохранить») renames the task. */
+  function finishEditing(save: boolean) {
+    // Guards against a second call within the same render, e.g. a repeated Enter or double click.
     if (!editingRef.current) return;
     editingRef.current = false;
-    restoreFocusRef.current = restoreFocus;
+    restoreFocusRef.current = true;
     setIsEditing(false);
 
     const title = normalizeTitle(draft);
-    if (save && title && title !== todo.title) {
+    if (save && isValidTitle(title) && title !== todo.title) {
       onRename(todo.id, title);
     }
   }
@@ -57,10 +58,10 @@ export function TodoItem({ todo, highlighted, onToggle, onRename, onDelete }: To
   function handleKeyDown(event: KeyboardEvent<HTMLInputElement>) {
     if (event.key === 'Enter') {
       event.preventDefault();
-      finishEditing(true, true);
+      finishEditing(true);
     } else if (event.key === 'Escape') {
       event.preventDefault();
-      finishEditing(false, true);
+      finishEditing(false);
     }
   }
 
@@ -95,26 +96,22 @@ export function TodoItem({ todo, highlighted, onToggle, onRename, onDelete }: To
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
             onKeyDown={handleKeyDown}
-            onBlur={() => finishEditing(true, false)}
             maxLength={MAX_TITLE_LENGTH}
             enterKeyHint="done"
             aria-label="Текст задачи"
           />
           <div className="todo__edit-actions">
-            {/* preventDefault on mousedown keeps focus in the input, so blur does not save first. */}
             <button
               type="button"
               className="button button--ghost button--small"
-              onMouseDown={(event) => event.preventDefault()}
-              onClick={() => finishEditing(false, true)}
+              onClick={() => finishEditing(false)}
             >
               Отмена
             </button>
             <button
               type="button"
               className="button button--secondary button--small"
-              onMouseDown={(event) => event.preventDefault()}
-              onClick={() => finishEditing(true, true)}
+              onClick={() => finishEditing(true)}
             >
               Сохранить
             </button>

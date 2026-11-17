@@ -7,6 +7,11 @@ export function normalizeTitle(value: string): string {
   return value.trim().replace(/\s+/g, ' ');
 }
 
+/** A normalized title is valid when it is non-empty and fits the length limit. */
+export function isValidTitle(title: string): boolean {
+  return title.length > 0 && title.length <= MAX_TITLE_LENGTH;
+}
+
 export function matchesFilter(todo: Todo, filter: Filter): boolean {
   if (filter === 'active') return !todo.completed;
   if (filter === 'completed') return todo.completed;
